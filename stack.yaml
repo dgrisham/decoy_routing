@@ -1,0 +1,7 @@
+flags: {}
+extra-package-dbs: []
+packages:
+- '.'
+extra-deps:
+- containers-0.5.8.1
+resolver: lts-7.7
