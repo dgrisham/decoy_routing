@@ -18,8 +18,10 @@ import qualified Data.HashMap.Strict as HM
 --------------------------------------------------------------------------------
 -- ## Local
 
-import Types
 import Game
+import Utils.Types.Players.Censor
+import Utils.Types.Route (Route (..), RouteType (..), AS (..), makeDomain)
+import qualified Utils.Types.Players.AS as AS
 
 
 --------------------------------------------------------------------------------
@@ -35,9 +37,15 @@ freeAS3 = FreeAS freeDomain3
 censorDomain = makeDomain "10.0.0.1" 16
 censorAS = CensorAS censorDomain
 
-asPlayers :: ASPlayers
-asPlayers = (HM.insert freeDomain1 Decoy) $ (HM.insert freeDomain2 NotDecoy HM.empty)
-
 routeWithDecoy = Route BGP censorAS (Seq.fromList [freeAS1]) freeAS3
 routeWithoutDecoy = Route BGP censorAS (Seq.fromList [freeAS2]) freeAS3
+
+asPlayers :: AS.Players
+asPlayers = AS.Players { AS.params = asParams, AS.actions = asActions }
+
+asParams :: AS.Params
+asParams = AS.Params { AS.dollarsPerUnit = 1, AS.serviceFee = 0.5 }
+
+asActions :: AS.Actions
+asActions = (HM.insert freeAS1 AS.Decoy) $ (HM.insert freeAS2 AS.NotDecoy HM.empty)
 

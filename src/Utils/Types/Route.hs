@@ -1,12 +1,11 @@
 --------------------------------------------------------------------------------
 -- | 
--- Module      : Types
--- Note        : Types for the overall Game formulation and Players
+-- Module      : Route
+-- Note        : 
 -- 
--- 
+-- Route and AS (not the ASPlayer) definitions
 -- 
 --------------------------------------------------------------------------------
-
 
 --------------------------------------------------------------------------------
 -- # Extensions
@@ -15,21 +14,19 @@
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE DeriveDataTypeable #-}
 
+
+--------------------------------------------------------------------------------
+-- # Exports
 --------------------------------------------------------------------------------
 
-module Types ( Game (..)
-             , Set
-             , Utility
-             , Route (..)
-             , Routes
-             , RouteType (..)
-             , AS (..)
-             , makeDomain
-             , asSize
-             , CensorPlayer (..)
-             , ASPlayers
-             , ASAction (..)
-    ) where
+module Utils.Types.Route ( Routes
+                         , Route (..)
+                         , Set
+                         , RouteType (..)
+                         , routeSize
+                         , AS (..)
+                         , makeDomain
+                         ) where
 
 
 --------------------------------------------------------------------------------
@@ -40,20 +37,9 @@ import Data.Data (Data)
 import Data.Bits (xor)
 import Data.List (foldl')
 import Data.Sequence (Seq)
-import Data.Hashable (Hashable, hash, hashWithSalt, hashUsing)
 import Data.IP (IPv4, fromIPv4)
+import Data.Hashable (Hashable, hash, hashWithSalt, hashUsing)
 import qualified Data.HashSet as HS
-import qualified Data.HashMap.Strict as HM
-
-
---------------------------------------------------------------------------------
--- # General
---------------------------------------------------------------------------------
-
-data Game = Game CensorPlayer ASPlayers
-type Set = HS.HashSet
-
-type Utility = Float
 
 
 --------------------------------------------------------------------------------
@@ -63,14 +49,11 @@ type Utility = Float
 --------------------------------------------------------------------------------
 -- ## Route
 
+type Routes = Set Route
+
 -- a Route is a path from ASi to ASj, via a Sequence of ASes
--- specifically, a Route goes from an ASCensor to an ASFree, through a Sequence
--- of either type of AS. it is either a BGP or RBGP route, as chosen by the
--- CensorPlayer
 data Route = Route RouteType AS (Seq AS) AS
   deriving (Data, Eq, Show)
-
-type Routes = Set Route
 
 data RouteType = BGP | RBGP
   deriving (Data, Enum, Eq, Show)
@@ -86,8 +69,21 @@ instance Hashable Route where
 instance Hashable RouteType where
   hashWithSalt = hashUsing fromEnum
 
+
 --------------------------------------------------------------------------------
--- ## AS
+-- ## Useful functions
+
+-- Route size (not number of ASes, but size of endpoints multiplied)
+routeSize :: Route -> Int
+routeSize (Route _ source _ sink) = asSize source * asSize sink
+
+
+--------------------------------------------------------------------------------
+-- # AS
+--------------------------------------------------------------------------------
+
+--------------------------------------------------------------------------------
+-- ## Types
 
 data AS = FreeAS ASDomain
         | CensorAS ASDomain
@@ -96,49 +92,21 @@ data AS = FreeAS ASDomain
 type ASDomain = (IPv4, NetMask)
 type NetMask = Int
 
+--------------------------------------------------------------------------------
+-- ## Functions
+
 makeDomain :: String -> NetMask -> ASDomain
 makeDomain ip mask = ((read ip :: IPv4), mask)
-
--- accessor
-domain :: AS -> ASDomain
-domain (FreeAS domain) = domain
-domain (CensorAS domain) = domain
 
 -- get number of IP addrs from integer netmask
 asSize :: AS -> ASSize
 asSize (FreeAS   (_, mask)) = 2 ^ (32 - mask)
 asSize (CensorAS (_, mask)) = 2 ^ (32 - mask)
 
---------------------------------------------------------------------------------
--- # Players
---------------------------------------------------------------------------------
-
---------------------------------------------------------------------------------
--- ## Censor
-
-data CensorPlayer = CensorPlayer CensorProfile Routes CensorCosts
-
--- Censor's profile is made up of 6 values, each between 0 and 1
-data CensorProfile = CensorProfile Float Float Float Float Float Float
-data CensorCosts = CensorCosts Cost Cost Cost Cost Cost Cost
-data Cost = Float
-
---------------------------------------------------------------------------------
--- ## AS Players
-
--- ### Types
-
-type ASPlayers = HM.HashMap ASDomain ASAction
-
--- Free AS's choice to deploy as decoy router or not
-data ASAction = Decoy | NotDecoy
-  deriving (Eq, Data, Enum, Show)
-
 type ASSize = Int
-type Decoy = Bool
 
 --------------------------------------------------------------------------------
--- ### Instance declarations
+-- ## Instance declarations
 
 instance Hashable AS where
   hashWithSalt s (FreeAS (ip, range)) =
@@ -149,16 +117,12 @@ instance Hashable AS where
 instance Hashable IPv4 where
   hash ip = hash (fromIPv4 ip)
 
-instance Hashable ASAction where
-  hashWithSalt = hashUsing fromEnum
-
-combine :: Int -> Int -> Int
-combine h1 h2 = (h1 * 16777619) `xor` h2
-
 
 --------------------------------------------------------------------------------
 -- # Etc
 --------------------------------------------------------------------------------
+
+type Set = HS.HashSet
 
 --------------------------------------------------------------------------------
 -- ## Instance declarations
@@ -172,4 +136,8 @@ instance {-# OVERLAPS #-} (Foldable f, Hashable h) => Hashable (f h) where
     where
       finalise (SP s l) = hashWithSalt s l
       step (SP s l) x   = SP (hashWithSalt s x) (l + 1)
+
+-- combines hashed results
+combine :: Int -> Int -> Int
+combine h1 h2 = (h1 * 16777619) `xor` h2
 
