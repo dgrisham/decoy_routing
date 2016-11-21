@@ -3,11 +3,19 @@
 -- Module      : GameFormulation
 -- Note        : 
 -- 
--- Utility functions/etc. that describe the game.
+-- Game implementation
 -- 
 --------------------------------------------------------------------------------
 
 module Game where
 
-import Utils.AS
-import Utils.Censor
+--------------------------------------------------------------------------------
+-- # Imports
+
+--------------------------------------------------------------------------------
+-- ## Local
+
+import qualified Utils.Censor as Censor
+import qualified Utils.AS as AS
+
+

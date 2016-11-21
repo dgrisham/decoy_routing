@@ -18,12 +18,12 @@ library
   exposed-modules:     Lib
                      , Game
                      , Test
-                     , Utils.AS
-                     , Utils.Censor
-                     , Utils.Types.Game
-                     , Utils.Types.Route
-                     , Utils.Types.Players.AS
-                     , Utils.Types.Players.Censor
+                     -- , Utils.AS
+                     -- , Utils.Censor
+                     -- , Utils.Types.Game
+                     -- , Utils.Types.Route
+                     -- , Utils.Types.Players.AS
+                     -- , Utils.Types.Players.Censor
   build-depends:       base >= 4.7 && < 5
                      , iproute
                      , containers >= 0.5.8

@@ -7,7 +7,9 @@
 -- 
 --------------------------------------------------------------------------------
 
-module Utils.Censor where
+module Utils.Censor ( utility
+                    , module Utils.Types.Players.Censor
+                    ) where
 
 --------------------------------------------------------------------------------
 -- # Imports
@@ -21,9 +23,9 @@ import Data.List (foldr)
 
 import Utils.AS (hasDecoy)
 import Utils.Types.Game (Utility)
-import Utils.Types.Route (Routes, Route (..), routeSize, AS (..))
-import qualified Utils.Types.Players.AS as ASP
-import qualified Utils.Types.Players.Censor as Censor
+import Utils.Types.Route (Routes, Route (..), routeSize)
+import Utils.Types.Players.Censor
+import qualified Utils.Types.Players.AS as AS
 
 
 --------------------------------------------------------------------------------
@@ -33,41 +35,41 @@ import qualified Utils.Types.Players.Censor as Censor
 --------------------------------------------------------------------------------
 -- ## Censor
 
-utilityCensor :: Censor.Player -> ASP.Actions -> Utility
-utilityCensor (Censor.Player profile routes) asActions =
-    (Censor.b0 profile) * benefitCensor routes asActions
-  - costCensor profile routes
+utility :: Player -> AS.Actions -> Utility
+utility (Player profile routes) asActions =
+    (b0 profile) * benefit routes asActions
+  - cost profile routes
 
 -- ### Benefit
 
-benefitCensor :: Fractional a => Routes -> ASP.Actions -> a
-benefitCensor = censorshipMetric
+benefit :: Fractional a => Routes -> AS.Actions -> a
+benefit = censorshipMetric
 
 -- data Game = Game CensorPlayer (Set AS) Routes Costs
-censorshipMetric :: Fractional a => Routes -> ASP.Actions -> a
+censorshipMetric :: Fractional a => Routes -> AS.Actions -> a
 censorshipMetric routes actions = 1 - freedomMetric routes actions
 
-freedomMetric :: Fractional a => Routes -> ASP.Actions -> a
+freedomMetric :: Fractional a => Routes -> AS.Actions -> a
 freedomMetric routes actions =
     (foldr ((+) . routeContribution actions) 0 routes) `floatDiv` totalSize
   where
     totalSize = foldr ((+) . routeSize) 0 routes
 
-routeContribution :: ASP.Actions -> Route -> Int
+routeContribution :: AS.Actions -> Route -> Int
 routeContribution actions route@(Route _ source _ sink)
   | hasDecoy actions route = routeSize route
   | otherwise = 0
 
 -- ### Cost
 
-costCensor :: Censor.Profile -> Routes -> Float
-costCensor profile routes =
-    Censor.b1 profile * unreachableDestinations routes
-  + Censor.b2 profile * unreachableDomains routes
-  + Censor.b3 profile * increasedRouteLength routes
-  + Censor.b4 profile * nonValleyFreePaths routes
-  + Censor.b5 profile * lessPreferredRoutes routes
-  + Censor.b6 profile * newTransitASes routes
+cost :: Profile -> Routes -> Float
+cost profile routes =
+    b1 profile * unreachableDestinations routes
+  + b2 profile * unreachableDomains routes
+  + b3 profile * increasedRouteLength routes
+  + b4 profile * nonValleyFreePaths routes
+  + b5 profile * lessPreferredRoutes routes
+  + b6 profile * newTransitASes routes
 
 unreachableDestinations :: Fractional a => Routes -> a
 unreachableDestinations routes = 0
