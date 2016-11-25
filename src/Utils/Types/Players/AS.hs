@@ -16,7 +16,7 @@ module Utils.Types.Players.AS ( Player (..)
                               , Params (..)
                               , ServiceFee
                               , DollarsPerUnit
-                              , Actions
+                              , Coalition
                               , Action (..)
                               ) where
 
@@ -30,7 +30,8 @@ import qualified Data.HashMap.Strict as HM
 --------------------------------------------------------------------------------
 -- ## Local
 
-import Utils.Types.Route (AS)
+import qualified Utils.Types.Route as Route (AS)
+
 
 --------------------------------------------------------------------------------
 -- # AS Players
@@ -39,15 +40,15 @@ import Utils.Types.Route (AS)
 --------------------------------------------------------------------------------
 -- ## Types
 
-data Player = Player { domain :: AS
+data Player = Player { domain :: Route.AS
                      , action :: Action
                      } deriving (Show)
 
-data Players = Players { params  :: Params
-                       , actions :: Actions
+data Players = Players { params    :: Params
+                       , coalition :: Coalition
                        } deriving (Show)
 
-type Actions = HM.HashMap AS Action
+type Coalition = HM.HashMap Route.AS Action
 
 data Params = Params { dollarsPerUnit :: DollarsPerUnit
                      , serviceFee     :: ServiceFee

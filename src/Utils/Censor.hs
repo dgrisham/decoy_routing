@@ -35,29 +35,29 @@ import qualified Utils.Types.Players.AS as AS
 --------------------------------------------------------------------------------
 -- ## Censor
 
-utility :: Player -> AS.Actions -> Utility
-utility (Player profile routes) asActions =
-    (b0 profile) * benefit routes asActions
+utility :: Player -> AS.Coalition -> Utility
+utility (Player profile routes) asCoalition =
+    (b0 profile) * benefit routes asCoalition
   - cost profile routes
 
 -- ### Benefit
 
-benefit :: Fractional a => Routes -> AS.Actions -> a
+benefit :: Fractional a => Routes -> AS.Coalition -> a
 benefit = censorshipMetric
 
 -- data Game = Game CensorPlayer (Set AS) Routes Costs
-censorshipMetric :: Fractional a => Routes -> AS.Actions -> a
-censorshipMetric routes actions = 1 - freedomMetric routes actions
+censorshipMetric :: Fractional a => Routes -> AS.Coalition -> a
+censorshipMetric routes coalition = 1 - freedomMetric routes coalition
 
-freedomMetric :: Fractional a => Routes -> AS.Actions -> a
-freedomMetric routes actions =
-    (foldr ((+) . routeContribution actions) 0 routes) `floatDiv` totalSize
+freedomMetric :: Fractional a => Routes -> AS.Coalition -> a
+freedomMetric routes coalition =
+    (foldr ((+) . routeContribution coalition) 0 routes) `floatDiv` totalSize
   where
     totalSize = foldr ((+) . routeSize) 0 routes
 
-routeContribution :: AS.Actions -> Route -> Int
-routeContribution actions route@(Route _ source _ sink)
-  | hasDecoy actions route = routeSize route
+routeContribution :: AS.Coalition -> Route -> Int
+routeContribution coalition route@(Route _ source _ sink)
+  | hasDecoy coalition route = routeSize route
   | otherwise = 0
 
 -- ### Cost

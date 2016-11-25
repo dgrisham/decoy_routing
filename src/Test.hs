@@ -41,11 +41,11 @@ routeWithDecoy = Route BGP censorAS (Seq.fromList [freeAS1]) freeAS3
 routeWithoutDecoy = Route BGP censorAS (Seq.fromList [freeAS2]) freeAS3
 
 asPlayers :: AS.Players
-asPlayers = AS.Players { AS.params = asParams, AS.actions = asActions }
+asPlayers = AS.Players { AS.params = asParams, AS.coalition = asActions }
 
 asParams :: AS.Params
 asParams = AS.Params { AS.dollarsPerUnit = 1, AS.serviceFee = 0.5 }
 
-asActions :: AS.Actions
+asActions :: AS.Coalition
 asActions = (HM.insert freeAS1 AS.Decoy) $ (HM.insert freeAS2 AS.NotDecoy HM.empty)
 

@@ -1,5 +1,4 @@
---------------------------------------------------------------------------------
--- | 
+---------------------------------------------------------------------------------- | 
 -- Module      : Utils.AS
 -- Note        : 
 -- 
@@ -9,6 +8,8 @@
 
 module Utils.AS ( utility
                 , hasDecoy
+                , updatePlayer
+                , flipDecoyStatus
                 , module Utils.Types.Players.AS
                 ) where
 
@@ -35,43 +36,47 @@ import qualified Utils.Types.Route as Route (AS (..))
 -- # AS Utility Function
 --------------------------------------------------------------------------------
 
-utility :: Fractional a => Players -> Player -> Routes -> Utility
-utility players player routes =
+utility :: Fractional a => Players -> Routes -> Player -> Utility
+utility players routes player =
     foldr ((+) . routeRevenue players player) 0 routes
 
 routeRevenue :: Fractional a => Players -> Player -> Route -> Utility
-routeRevenue (Players params actions) player route@(Route routeType _ _ _)
+routeRevenue (Players params coalition) player route@(Route routeType _ _ _)
   | isOnRoute player route = routeSize' * (transitRev + decoyRev)
   | otherwise = 0
   where
     dollarConv = dollarsPerUnit params
     routeSize' = fromIntegral $ routeSize route
     transitRev = transitRevenue player route
-    decoyRev   = decoyRevenue actions (serviceFee params) player route
+    decoyRev   = decoyRevenue coalition (serviceFee params) player route
 
 transitRevenue :: Fractional a => Player -> Route -> Utility
 transitRevenue (Player _ _) route = 1
 
-decoyRevenue :: Fractional a => Actions -> ServiceFee -> Player -> Route -> ServiceFee
-decoyRevenue actions serviceFee player@(Player as action) route
-  | isFirstDecoy actions player route = serviceFee
+decoyRevenue :: Fractional a => Coalition -> ServiceFee -> Player -> Route -> ServiceFee
+decoyRevenue coalition serviceFee player@(Player as action) route
+  | isFirstDecoy coalition player route = serviceFee
   | otherwise = 0
 
-isFirstDecoy :: Actions -> Player -> Route -> Bool
-isFirstDecoy actions (Player as _) route
+isFirstDecoy :: Coalition -> Player -> Route -> Bool
+isFirstDecoy coalition (Player as _) route
   | isNothing firstDecoy = False
-  | isDecoy actions as = (as == fromJust firstDecoy)
+  | isDecoy coalition as = (as == fromJust firstDecoy)
   | otherwise = False
   where
-    firstDecoy = firstDecoyOnRoute actions route
+    firstDecoy = firstDecoyOnRoute coalition route
 
-firstDecoyOnRoute :: Actions -> Route -> Maybe Route.AS
-firstDecoyOnRoute actions route@(Route _ _ seq sink) =
-  case Seq.findIndexL (isDecoy actions) ases of
+firstDecoyOnRoute :: Coalition -> Route -> Maybe Route.AS
+firstDecoyOnRoute coalition route@(Route _ _ seq sink) =
+  case Seq.findIndexL (isDecoy coalition) ases of
     Just k -> Seq.lookup k ases
     Nothing -> Nothing
   where
     ases = seq |> sink
+
+updatePlayer :: Players -> Player -> Players
+updatePlayer players (Player as action) =
+    players { coalition = HM.insert as action (coalition players) }
 
 --------------------------------------------------------------------------------
 -- ## Helper functions
@@ -87,17 +92,22 @@ isOnRoute (Player as _) (Route _ _ seq sink) =
     ases = seq |> sink
 
 -- check whether route has a Decoy
-hasDecoy :: Actions -> Route -> Bool
-hasDecoy actions (Route _ _ seq sink) =
-    foldr ((||) . isDecoy actions) False ases
+hasDecoy :: Coalition -> Route -> Bool
+hasDecoy coalition (Route _ _ seq sink) =
+    foldr ((||) . isDecoy coalition) False ases
   where
     ases = seq |> sink
 
 --  check whether (Free)AS is a Decoy router
-isDecoy :: Actions -> Route.AS -> Bool
+isDecoy :: Coalition -> Route.AS -> Bool
 isDecoy _ (Route.CensorAS _) = False
-isDecoy actions as =
-  case (HM.lookup as actions) of
+isDecoy coalition as =
+  case (HM.lookup as coalition) of
     Just Decoy -> True
     _             -> False
+
+-- change whether player is decoy or not
+flipDecoyStatus :: Player -> Player
+flipDecoyStatus (Player domain Decoy) = Player domain NotDecoy
+flipDecoyStatus (Player domain NotDecoy) = Player domain Decoy
 
